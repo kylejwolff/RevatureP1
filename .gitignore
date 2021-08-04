@@ -1,0 +1,9 @@
+*.class
+*.log
+/.bsp/
+/.idea/
+/metastore_db/
+/project/
+/sampleSeq/
+/spark-warehouse/
+/target/

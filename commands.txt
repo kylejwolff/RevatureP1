@@ -1,0 +1,350 @@
+SETUP:
+
+1. Put text files into HDFS
+
+hdfs dfs -put Bev_BranchA.txt /user/hive/coffee
+hdfs dfs -put Bev_BranchB.txt /user/hive/coffee
+hdfs dfs -put Bev_BranchC.txt /user/hive/coffee
+hdfs dfs -put Bev_ConscountA.txt /user/hive/coffee
+hdfs dfs -put Bev_ConscountB.txt /user/hive/coffee
+hdfs dfs -put Bev_ConscountC.txt /user/hive/coffee
+
+2. Create and use database
+
+hive> create database coffee;
+hive> use coffee;
+
+3. Create tables
+
+CREATE TABLE IF NOT EXISTS branch(beverage STRING, branch STRING) row format delimited fields terminated by ',';
+CREATE TABLE IF NOT EXISTS bevcount(beverage STRING, count INT) row format delimited fields terminated by ',';
+
+4. Load Data Into Tables
+
+hive> LOAD DATA INPATH '/user/hive/coffee/Bev_BranchA.txt' INTO TABLE branch;
+hive> LOAD DATA INPATH '/user/hive/coffee/Bev_BranchB.txt' INTO TABLE branch;
+hive> LOAD DATA INPATH '/user/hive/coffee/Bev_BranchC.txt' INTO TABLE branch;
+
+hive> LOAD DATA INPATH '/user/hive/coffee/Bev_ConscountA.txt' INTO TABLE bevcount;
+hive> LOAD DATA INPATH '/user/hive/coffee/Bev_ConscountB.txt' INTO TABLE bevcount;
+hive> LOAD DATA INPATH '/user/hive/coffee/Bev_ConscountC.txt' INTO TABLE bevcount;
+
+Problem Scenario 1
+What is the total number of consumers for Branch1?
+
+hive> SELECT SUM(t1.count)
+      FROM(
+      SELECT DISTINCT(b.beverage), b.branch, c.count 
+      FROM branch AS b LEFT JOIN bevcount AS c ON (b.beverage == c.beverage) 
+      WHERE b.branch = "Branch1") AS t1;
+
+Output:
+Total MapReduce CPU Time Spent: 9 seconds 880 msec
+OK
+1084568
+Time taken: 47.972 seconds, Fetched: 1 row(s)
+hive>
+
+What is the number of consumers for the Branch2?
+
+hive> SELECT SUM(t1.count)
+      FROM(
+      SELECT DISTINCT(b.beverage), b.branch, c.count 
+      FROM branch AS b LEFT JOIN bevcount AS c ON (b.beverage == c.beverage) 
+      WHERE b.branch = "Branch2") AS t1;
+
+Output:
+Total MapReduce CPU Time Spent: 30 seconds 40 msec
+OK
+5099141
+Time taken: 35.689 seconds, Fetched: 1 row(s)
+
+Problem Scenario 2
+What is the most consumed beverage on Branch1?
+
+hive> SELECT b.beverage, Sum(c.count) AS count
+      FROM branch b
+      JOIN bevcount c ON (b.beverage = c.beverage)
+      WHERE b.branch = "Branch1"
+      GROUP BY b.beverage
+      ORDER BY count DESC
+      LIMIT 1;
+
+Output:
+Total MapReduce CPU Time Spent: 10 seconds 490 msec
+OK
+Special_cappuccino      108163
+Time taken: 51.515 seconds, Fetched: 1 row(s)
+
+What is the least consumed beverage on Branch2?
+
+hive> SELECT b.beverage, Sum(c.count) AS count
+      FROM branch b
+      JOIN bevcount c ON (b.beverage = c.beverage)
+      WHERE b.branch = "Branch2"
+      GROUP BY b.beverage
+      ORDER BY count ASC
+      LIMIT 1;
+
+Output:
+Total MapReduce CPU Time Spent: 12 seconds 910 msec
+OK
+Cold_MOCHA      47524
+Time taken: 50.357 seconds, Fetched: 1 row(s)
+
+What is the Average consumed beverage of Branch2?
+
+hive> CREATE TABLE IF NOT EXISTS branch2count AS SELECT SUM(c.count) AS count 
+      FROM branch b JOIN bevcount c ON (b.beverage = c.beverage) 
+      WHERE b.branch = "Branch2" 
+      GROUP BY b.beverage;
+hive> SELECT AVG(count) FROM branch2count;
+
+Output:
+Total MapReduce CPU Time Spent: 5 seconds 620 msec
+OK
+99983.1568627451
+Time taken: 18.316 seconds, Fetched: 1 row(s)
+
+Problem Scenario 3
+What are the beverages available on Branch10, Branch8, and Branch1?
+
+hive> SELECT DISTINCT(beverage)
+      FROM branch
+      WHERE branch = "Branch10" OR branch = "Branch8" OR branch = "Branch1";
+
+Output:
+Total MapReduce CPU Time Spent: 6 seconds 10 msec
+OK
+Cold_Coffee
+Cold_LATTE
+Cold_Lite
+Cold_cappuccino
+Double_Coffee
+Double_Espresso
+Double_LATTE
+Double_MOCHA
+Double_cappuccino
+ICY_Coffee
+ICY_Espresso
+ICY_Lite
+ICY_MOCHA
+ICY_cappuccino
+LARGE_Coffee
+LARGE_Espresso
+LARGE_MOCHA
+LARGE_cappuccino
+MED_Coffee
+MED_Espresso
+MED_LATTE
+MED_MOCHA
+MED_cappuccino
+Mild_Coffee
+Mild_Espresso
+Mild_LATTE
+Mild_Lite
+Mild_cappuccino
+SMALL_Espresso
+SMALL_LATTE
+SMALL_Lite
+SMALL_MOCHA
+Special_Coffee
+Special_Espresso
+Special_LATTE
+Special_Lite
+Special_MOCHA
+Special_cappuccino
+Triple_Coffee
+Triple_Espresso
+Triple_LATTE
+Triple_Lite
+Triple_MOCHA
+Triple_cappuccino
+Time taken: 19.282 seconds, Fetched: 44 row(s)
+
+What are the common beverages available in Branch4,Branch7?
+
+hive> SELECT beverage
+      FROM branch
+      WHERE branch = "Branch4"
+      UNION
+      SELECT beverage
+      FROM branch
+      WHERE branch = "Branch7";
+
+Output:
+Total MapReduce CPU Time Spent: 5 seconds 890 msec
+OK
+Cold_Coffee
+Cold_Espresso
+Cold_LATTE
+Cold_Lite
+Cold_MOCHA
+Cold_cappuccino
+Double_Coffee
+Double_Espresso
+Double_LATTE
+Double_Lite
+Double_MOCHA
+Double_cappuccino
+ICY_Coffee
+ICY_Espresso
+ICY_LATTE
+ICY_Lite
+ICY_MOCHA
+ICY_cappuccino
+LARGE_Coffee
+LARGE_Espresso
+LARGE_LATTE
+LARGE_Lite
+LARGE_MOCHA
+LARGE_cappuccino
+MED_Coffee
+MED_Espresso
+MED_LATTE
+MED_Lite
+MED_MOCHA
+MED_cappuccino
+Mild_Coffee
+Mild_Espresso
+Mild_LATTE
+Mild_Lite
+Mild_MOCHA
+Mild_cappuccino
+SMALL_Coffee
+SMALL_Espresso
+SMALL_LATTE
+SMALL_Lite
+SMALL_MOCHA
+SMALL_cappuccino
+Special_Coffee
+Special_Espresso
+Special_LATTE
+Special_Lite
+Special_MOCHA
+Special_cappuccino
+Triple_Coffee
+Triple_Espresso
+Triple_LATTE
+Triple_Lite
+Triple_MOCHA
+Triple_cappuccino
+Time taken: 19.906 seconds, Fetched: 54 row(s)
+
+Problem Scenario 4
+
+Create a partition, View for Scenario 3.
+
+hive> CREATE VIEW bevb4b7 AS
+      SELECT beverage
+      FROM branch
+      WHERE branch = "Branch4"
+      UNION
+      SELECT beverage
+      FROM branch
+      WHERE branch = "Branch7";
+OK
+Time taken: 0.119 seconds
+
+hive> CREATE VIEW bevb10b8b1 AS
+      SELECT DISTINCT(beverage)
+      FROM branch
+      WHERE branch = "Branch10" OR branch = "Branch8" OR branch = "Branch1";
+OK
+Time taken: 0.103 seconds
+
+hive> CREATE TABLE branch_part(beverage STRING) PARTITIONED BY (branch STRING);
+OK
+Time taken: 0.036 seconds
+hive> set hive.exec.dynamic.partition.mode=nonstrict;
+hive> INSERT OVERWRITE TABLE branch_part PARTITION(branch) SELECT beverage, branch FROM branch;
+
+Problem Scenario 5
+Alter the table properties to add "note","comment"
+
+hive> ALTER TABLE branch SET TBLPROPERTIES('note'='that\'s why you always leave a note');
+hive> ALTER TABLE branch SET TBLPROPERTIES('comment'='from the peanut gallery');
+
+Problem Scenario 6
+
+Remove a row from any Senario
+hive> CREATE TABLE IF NOT EXISTS dummy_table AS
+      SELECT * FROM branch
+      WHERE beverage <> "SMALL_Coffee" AND branch = "Branch2";
+
+Add atleast two intresting findings of yourself in this project.
+
+Select all beverage totals from Branch 5
+hive> SELECT b.beverage, Sum(c.count) AS count
+      FROM branch b
+      JOIN bevcount c ON (b.beverage = c.beverage)
+      WHERE b.branch = "Branch5"
+      GROUP BY b.beverage
+      ORDER BY b.beverage ASC;
+
+Total MapReduce CPU Time Spent: 9 seconds 250 msec
+OK
+Cold_Coffee     103864
+Cold_Espresso   50432
+Cold_Lite       52005
+Cold_cappuccino 379924
+Double_Espresso 54378
+Double_LATTE    56189
+Double_Lite     98532
+Double_MOCHA    50228
+Double_cappuccino       197620
+ICY_Coffee      48555
+ICY_Espresso    50820
+ICY_LATTE       49166
+ICY_Lite        48220
+ICY_MOCHA       49482
+ICY_cappuccino  306714
+LARGE_Espresso  53824
+LARGE_LATTE     104466
+LARGE_Lite      51676
+LARGE_MOCHA     50596
+LARGE_cappuccino        103894
+MED_Coffee      48994
+MED_Espresso    48413
+MED_LATTE       47211
+MED_Lite        51786
+MED_MOCHA       51604
+MED_cappuccino  95103
+Mild_Coffee     103760
+Mild_Espresso   48462
+Mild_MOCHA      53681
+Mild_cappuccino 218716
+SMALL_Coffee    49501
+SMALL_LATTE     46592
+SMALL_Lite      98614
+SMALL_MOCHA     49237
+SMALL_cappuccino        202854
+Special_LATTE   101208
+Special_Lite    54050
+Special_MOCHA   108292
+Special_cappuccino      108163
+Triple_Coffee   101296
+Triple_Espresso 48775
+Triple_MOCHA    50644
+Triple_cappuccino       193636
+Time taken: 47.278 seconds, Fetched: 43 row(s)
+
+Select the total Large Mocha sold for each branch
+hive> SELECT b.branch, SUM(c.count)
+      FROM branch b
+      JOIN bevcount c ON (b.beverage = c.beverage)
+      WHERE b.beverage = "LARGE_MOCHA"
+      GROUP BY b.branch
+      ORDER BY b.branch ASC;
+
+Total MapReduce CPU Time Spent: 9 seconds 400 msec
+OK
+Branch2 101192
+Branch3 50596
+Branch4 50596
+Branch5 50596
+Branch6 50596
+Branch7 50596
+Branch8 50596
+Branch9 50596
+Time taken: 48.885 seconds, Fetched: 8 row(s)
