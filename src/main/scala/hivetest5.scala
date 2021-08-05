@@ -11,17 +11,13 @@ object hivetest5 {
       .builder
       .appName("hello hive")
       .config("spark.master", "local")
+      //.config("spark.sql.warehouse.dir", "hdfs://localhost/user/hive/warehouse")
+      //.config("spark.sql.hive.metastore.jars","/home/kylej/apache-hive-3.1.2-bin/lib")
+      //.config("spark.sql.hive.metastore.version", "3.1.2")
+      //.appName("SparkTest1")
       .enableHiveSupport()
       .getOrCreate()
     println("created spark session")
-
-    //spark.sql("CREATE TABLE IF NOT EXISTS src (key INT, value STRING) USING hive")
-    //spark.sql("CREATE TABLE IF NOT EXISTS src(key INT, value STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY ‘,’ STORED AS TEXTFILE")
-    //spark.sql("LOAD DATA LOCAL INPATH 'C:/tmp/hive/KyleJ/kv1.txt' INTO TABLE src")
-    //spark.sql("CREATE TABLE IF NOT EXISTS src (key INT,value STRING) USING hive")
-//    spark.sql("CREATE TABLE IF NOT EXISTS newone(id Int,name String) row format delimited fields terminated by ','");
-//    spark.sql("LOAD DATA LOCAL INPATH 'C:/tmp/hive/KyleJ/kv1.txt' INTO TABLE newone")
-//    spark.sql("SELECT * FROM newone").show()
 
     // Create tables
     spark.sql("DROP TABLE IF EXISTS branch")
@@ -127,9 +123,25 @@ object hivetest5 {
     println("Problem Scenario 6")
 
     println("Remove a row from any Senario")
-    spark.sql("DROP TABLE IF EXISTS dummy_table")
-    spark.sql("CREATE TABLE IF NOT EXISTS dummy_table AS " +
-      "SELECT * FROM branch " +
-      "WHERE beverage <> 'SMALL_Coffee' AND branch = 'Branch2'")
+    spark.sql("SELECT DISTINCT(beverage) " +
+      "FROM branch " +
+      "WHERE (branch = 'Branch10' OR branch = 'Branch8' OR branch = 'Branch1') " +
+      "AND beverage <> 'Cold_Coffee'").show()
+
+    println("Select all beverage totals from Branch 5")
+    spark.sql("SELECT b.beverage, Sum(c.count) AS count " +
+      "FROM branch b " +
+      "JOIN bevcount c ON (b.beverage = c.beverage) " +
+      "WHERE b.branch = 'Branch5' " +
+      "GROUP BY b.beverage " +
+      "ORDER BY b.beverage ASC").show()
+
+    println("Select the total Large Mocha sold for each branch")
+    spark.sql("SELECT b.branch, SUM(c.count) " +
+      "FROM branch b " +
+      "JOIN bevcount c ON (b.beverage = c.beverage) " +
+      "WHERE b.beverage = 'LARGE_MOCHA' " +
+      "GROUP BY b.branch " +
+      "ORDER BY b.branch ASC").show()
   }
 }
