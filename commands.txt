@@ -94,7 +94,8 @@ Time taken: 50.357 seconds, Fetched: 1 row(s)
 
 What is the Average consumed beverage of Branch2?
 
-hive> CREATE TABLE IF NOT EXISTS branch2count AS SELECT SUM(c.count) AS count 
+hive> CREATE TABLE IF NOT EXISTS branch2count 
+      AS SELECT b.beverage, SUM(c.count) AS count 
       FROM branch b JOIN bevcount c ON (b.beverage = c.beverage) 
       WHERE b.branch = "Branch2" 
       GROUP BY b.beverage;
@@ -268,9 +269,11 @@ hive> ALTER TABLE branch SET TBLPROPERTIES('comment'='from the peanut gallery');
 Problem Scenario 6
 
 Remove a row from any Senario
-hive> CREATE TABLE IF NOT EXISTS dummy_table AS
-      SELECT * FROM branch
-      WHERE beverage <> "SMALL_Coffee" AND branch = "Branch2";
+hive> SELECT DISTINCT(beverage)
+      FROM branch
+      WHERE (branch = "Branch10" OR branch = "Branch8" OR branch = "Branch1")
+      AND beverage <> "Cold_Coffee";
+
 
 Add atleast two intresting findings of yourself in this project.
 
